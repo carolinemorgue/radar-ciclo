@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radar de Ciclo — Eixo 1</title>
+<style>
+  :root{
+    --bg: #eef0f3;
+    --bg-card: #ffffff;
+    --bg-card-alt: #f6f7f9;
+    --line: #dde1e7;
+    --text: #14213d;
+    --text-dim: #5c6b80;
+    --navy: #14213d;
+    --amber: #b8860b;
+    --amber-dim: #fdf1d8;
+    --olive: #2f6b3a;
+    --olive-dim: #e5f2e6;
+    --terracotta: #a83232;
+    --terracotta-dim: #fbe6e3;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 60px;
+  }
+  header{
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--navy) 0%, var(--bg) 100%);
+  }
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 6px;
+  }
+  h1{
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .subtitle{
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .section{ padding: 20px; }
+  .section-title{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after{
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* KPI cards */
+  .kpi-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .kpi{
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .kpi-value{
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .kpi-label{
+    color: var(--text-dim);
+    font-size: 11.5px;
+    margin-top: 6px;
+  }
+  .kpi.amber .kpi-value{ color: var(--amber); }
+  .kpi.olive .kpi-value{ color: var(--olive); }
+  .kpi.clickable{ cursor: pointer; transition: background 0.15s; }
+  .kpi.clickable:active{ background: var(--bg-card-alt); }
+  .kpi-label{ user-select: none; }
+  .card.neutral{ border-left: 3px solid #6fa3c9; background: linear-gradient(90deg, rgba(111,163,201,0.15) 0%, var(--bg-card) 18%); }
+
+  .kpi-expand{
+    margin-top: 10px;
+    display: none;
+  }
+  .kpi-expand.open{ display: block; }
+  .kpi-expand-item{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--bg-card-alt);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .kpi-expand-area{
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+  .kpi-expand-status{
+    color: var(--text-dim);
+    font-size: 11.5px;
+    text-align: right;
+  }
+
+  /* Gauge */
+  .gauge-wrap{
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .gauge-caption{
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 10px;
+    max-width: 260px;
+  }
+  .gauge-number{
+    font-family: var(--mono);
+    font-size: 15px;
+    fill: var(--text);
+    font-weight: 700;
+  }
+
+  /* Priority list */
+  .card{
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .card.priority{ border-left: 3px solid var(--amber); background: linear-gradient(90deg, var(--amber-dim) 0%, var(--bg-card) 18%); }
+  .card.structural{ border-left: 3px solid var(--olive); background: linear-gradient(90deg, var(--olive-dim) 0%, var(--bg-card) 18%); }
+  .card.warn{ border-left: 3px solid var(--terracotta); background: linear-gradient(90deg, var(--terracotta-dim) 0%, var(--bg-card) 18%); }
+  .card-main{ flex: 1; min-width: 0; }
+  .card-area{
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .card-meta{
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .card-days{
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .card-days-label{
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  /* Causa list */
+  .causa-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .causa-row:last-child{ border-bottom: none; }
+  .causa-row.clickable-row{ cursor: pointer; }
+  .causa-row.clickable-row:active{ background: var(--bg-card-alt); }
+  .causa-bar-bg{
+    flex: 1;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    margin: 0 10px;
+    overflow: hidden;
+  }
+  .causa-bar{
+    height: 100%;
+    background: var(--terracotta);
+    border-radius: 3px;
+  }
+  .causa-count{
+    font-family: var(--mono);
+    font-weight: 700;
+    min-width: 22px;
+    text-align: right;
+  }
+
+  /* Scatter chart */
+  .chart-wrap{
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  canvas{ max-width: 100%; }
+
+  /* Faixa breakdown */
+  .faixa-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .faixa-letter{
+    font-family: var(--mono);
+    font-weight: 700;
+    width: 20px;
+    color: var(--amber);
+  }
+  .faixa-bar-bg{
+    flex: 1;
+    height: 18px;
+    background: var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .faixa-bar{
+    height: 100%;
+    background: linear-gradient(90deg, var(--navy), #4a6285);
+    border-radius: 4px;
+  }
+  .faixa-val{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 46px;
+    text-align: right;
+  }
+
+  footer{
+    padding: 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+
+  .tab-toggle{
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 16px;
+  }
+  .tab-btn{
+    flex: 1;
+    padding: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+  .tab-btn.active{
+    background: var(--amber-dim);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .view{ display: none; }
+  .view.active{ display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">PDER Eixo 1 — Disposição de Rejeito</div>
+  <h1>Radar de Ciclo</h1>
+  <div class="subtitle" id="subtitle">Painel de acompanhamento das praças</div>
+</header>
+
+<div class="tab-toggle">
+  <div class="tab-btn active" data-view="hoje" onclick="switchView('hoje')">Turno de hoje</div>
+  <div class="tab-btn" data-view="analise" onclick="switchView('analise')">Análise do projeto</div>
+  <div class="tab-btn" data-view="inconsistencias" onclick="switchView('inconsistencias')">Inconsistências</div>
+</div>
+
+<!-- ===================== VIEW: HOJE ===================== -->
+<div class="view active" id="view-hoje">
+
+  <div class="section">
+    <div class="section-title">Panorama</div>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-value" id="kpi-total">—</div>
+        <div class="kpi-label">Praças acompanhadas</div>
+      </div>
+      <div class="kpi amber clickable" onclick="toggleKpiList('abertas')">
+        <div class="kpi-value" id="kpi-abertas">—</div>
+        <div class="kpi-label">Em trabalho agora ▾</div>
+      </div>
+      <div class="kpi olive clickable" onclick="toggleKpiList('concluidas')">
+        <div class="kpi-value" id="kpi-concluidas">—</div>
+        <div class="kpi-label">Concluídas ▾</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-value" id="kpi-disponibilidade">—</div>
+        <div class="kpi-label">% concluída (liberação de área)</div>
+      </div>
+    </div>
+    <div id="kpi-expand" class="kpi-expand"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Prioridade por tempo em aberto</div>
+    <div id="lista-prioridade"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Prioridade estrutural — nivelamento de cota</div>
+    <div class="gauge-caption" style="margin-bottom:10px;">Dentro de cada faixa (C a F), a praça com a cota mais baixa entre as abertas é sempre prioridade, pra nivelar o platô. Faixa G fora dessa lógica (afastamento de 60m).</div>
+    <div id="lista-estrutural"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Interferências ativas</div>
+    <div id="lista-interferencias" class="card-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Praças bloqueadas (fora da prioridade)</div>
+    <div id="lista-bloqueadas"></div>
+  </div>
+
+</div>
+
+<!-- ===================== VIEW: ANÁLISE ===================== -->
+<div class="view" id="view-analise">
+
+  <div class="section">
+    <div class="section-title">Saúde do ciclo</div>
+    <div class="gauge-wrap">
+      <svg width="220" height="130" viewBox="0 0 220 130" id="gauge-svg"></svg>
+      <div class="gauge-caption" id="gauge-caption">Desvio médio do tempo de ciclo (horas). Quanto menor, mais previsível o processo.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Tempo médio de ciclo por faixa</div>
+    <div class="chart-wrap" id="faixa-breakdown"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Umidade × tempo de regularização</div>
+    <div class="chart-wrap">
+      <canvas id="scatterChart" height="220"></canvas>
+      <div class="gauge-caption" style="margin-top:10px;">Cada ponto é uma praça já regularizada. Tendência de subida sugere que umidade alta puxa o tempo de regularização pra cima.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Causas mais frequentes</div>
+    <div class="chart-wrap" id="causas-wrap"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Praças liberadas ao longo dos dias</div>
+    <div class="chart-wrap">
+      <canvas id="liberadasChart" height="220"></canvas>
+    </div>
+    <div class="gauge-caption" style="margin-top:10px;">Quantidade de praças concluídas (ensaiadas) por dia, na data de conclusão. Toque numa barra pra ver quais praças foram.</div>
+    <div id="kpi-expand-liberadas" class="kpi-expand"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Tempo de compactação por praça</div>
+    <div class="chart-wrap" id="compactacao-wrap"></div>
+    <div class="gauge-caption" style="margin-top:10px;">Só praças com início e fim de compactação já registrados. Ordenado da mais longa pra mais curta.</div>
+  </div>
+
+</div>
+
+<!-- ===================== VIEW: INCONSISTÊNCIAS ===================== -->
+<div class="view" id="view-inconsistencias">
+
+  <div class="section">
+    <div class="section-title">Praças com pendência de registro</div>
+    <div class="gauge-caption" style="margin-bottom:14px;">Turno calculado automaticamente pelo horário de início do lançamento, cruzado com a escala. Turno "8" = 07h-19h. Turno "20" = 19h-07h do dia seguinte.</div>
+    <div id="lista-inconsistencias"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Lançamento sem término há mais de 2 dias</div>
+    <div class="gauge-caption" style="margin-bottom:10px;">Início do lançamento registrado, mas sem término — e já se passaram mais de 2 dias. Fora do normal, merece conferência.</div>
+    <div id="lista-lanc-pendente"></div>
+  </div>
+
+</div>
+
+<!-- REMOVIDO: view-resumo (Passos 6-8) a pedido -->
+<div class="view" id="view-resumo" style="display:none">
+
+  <div class="section">
+    <div class="section-title">Passo 6 — Diagnóstico</div>
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-value" id="resumo-total">—</div>
+        <div class="kpi-label">Registros de camada</div>
+      </div>
+      <div class="kpi olive">
+        <div class="kpi-value" id="resumo-concluidas">—</div>
+        <div class="kpi-label">Concluídas (ensaiadas)</div>
+      </div>
+      <div class="kpi clickable" onclick="toggleReprovadas()">
+        <div class="kpi-value" id="resumo-reprovadas">—</div>
+        <div class="kpi-label">Reprovadas ▾</div>
+      </div>
+      <div class="kpi amber">
+        <div class="kpi-value" id="resumo-diferenca-umidade">—</div>
+        <div class="kpi-label">Mais lento c/ umidade alta</div>
+      </div>
+    </div>
+    <div id="kpi-expand-reprovadas" class="kpi-expand"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Causa principal: umidade do material</div>
+    <div class="chart-wrap" id="resumo-umidade-tabela"></div>
+    <div id="kpi-expand-umid" class="kpi-expand"></div>
+    <div class="gauge-caption" id="resumo-umidade-texto" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Passo 7 — Melhoria proposta</div>
+    <div class="chart-wrap">
+      <div class="gauge-caption" style="font-size:13px; line-height:1.6;">
+        Critério objetivo de priorização diária, substituindo decisão individual por regra única:<br><br>
+        <b>1.</b> Praça em aberto há mais tempo é tratada primeiro.<br>
+        <b>2.</b> Faixa G: independente do tempo aberto, a camada mais baixa sempre é prioridade (nivelamento de platô).<br>
+        <b>3.</b> Lista recalculada automaticamente a partir dos dados do Geolabor — não depende de memória ou critério pessoal de quem está de plantão.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Passo 8 — Próximo passo</div>
+    <div class="chart-wrap">
+      <div class="gauge-caption" style="font-size:13px; line-height:1.6;">
+        <b>Aplicação formal iniciada em 01/09/2026:</b> a partir dessa data, o critério de priorização (praça mais antiga aberta primeiro, com a regra estrutural da faixa G) passou a ser aplicado de forma sistemática, não mais como teste informal. Todos os dados coletados até 31/08/2026 (nas tabelas desta análise) servem como linha de base "antes". Próximo passo: acompanhar o tempo de ciclo das praças tratadas a partir de 01/09/2026 por 2-3 semanas e comparar com essa linha de base, agora com uma data de corte clara.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  DADOS ATUALIZADOS MANUALMENTE · ÚLTIMA ATUALIZAÇÃO EMBUTIDA NESTA VERSÃO
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const DADOS = [{"area": "25C", "camada": "1", "inicio": "2026-08-22 14:40", "term_lanc": "2026-08-22 15:30", "term_reg": "2026-08-28 11:12", "conclusao": "2026-08-28 13:08", "t_lanc": 0.833333333430346, "t_reg": 139.699999999953, "t_ensaio": 1.93333333334886, "t_total": 142.466666666733, "umidade": 13.51, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26C", "camada": "1", "inicio": "2026-08-24 15:45", "term_lanc": "2026-08-24 17:52", "term_reg": "2026-08-28 10:09", "conclusao": "2026-08-28 12:49", "t_lanc": 2.1166666665813, "t_reg": 88.2833333335002, "t_ensaio": 2.66666666662786, "t_total": 93.0666666667094, "umidade": 15.58, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20D", "camada": "1", "inicio": "2026-08-21 10:20", "term_lanc": "2026-08-21 16:02", "term_reg": "2026-08-25 09:30", "conclusao": "2026-08-25 10:01", "t_lanc": 5.70000000006985, "t_reg": 89.4666666666744, "t_ensaio": 0.516666666604579, "t_total": 95.6833333333489, "umidade": 15.6, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21D", "camada": "1", "inicio": "2026-08-21 11:00", "term_lanc": "2026-08-21 16:00", "term_reg": "2026-08-25 09:30", "conclusao": "2026-08-25 09:46", "t_lanc": 4.99999999988359, "t_reg": 89.5000000001164, "t_ensaio": 0.266666666662786, "t_total": 94.7666666666628, "umidade": 15.6, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22D", "camada": "1", "inicio": "2026-08-21 20:45", "term_lanc": "2026-08-22 01:52", "term_reg": "2026-08-25 15:45", "conclusao": "2026-08-28 21:20", "t_lanc": 5.1166666665813, "t_reg": 85.8833333333605, "t_ensaio": 77.5833333333721, "t_total": 168.583333333314, "umidade": 12.6, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23D", "camada": "1", "inicio": "2026-08-21 21:18", "term_lanc": "2026-08-22 12:36", "term_reg": "2026-08-28 20:20", "conclusao": "2026-08-28 21:29", "t_lanc": 15.3000000001048, "t_reg": 151.733333333221, "t_ensaio": 1.15000000008149, "t_total": 168.183333333407, "umidade": 12.6, "causa": "RESOLVIDA em 30/08/2026: praça ficou sem registro de término de lançamento no Geolabor de 21/08 até pelo menos 29/08 (quase 8 dias). Em 30/08 o sistema passou a mostrar que o lançamento, na verdade, terminou em 22/08/2026 12:36 — ou seja, foi um atraso de REGISTRO no sistema, não um atraso operacional real.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24D", "camada": "1", "inicio": "2026-08-21 22:00", "term_lanc": "2026-08-22 08:30", "term_reg": "2026-08-23 20:10", "conclusao": "2026-08-23 22:45", "t_lanc": 10.5, "t_reg": 35.6666666668025, "t_ensaio": 2.58333333319752, "t_total": 48.75, "umidade": 12.6, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25D", "camada": "1", "inicio": "2026-08-22 08:40", "term_lanc": "2026-08-22 15:58", "term_reg": "2026-08-28 10:51", "conclusao": "2026-08-28 13:56", "t_lanc": 7.30000000004657, "t_reg": 138.883333333244, "t_ensaio": 3.08333333343035, "t_total": 149.266666666721, "umidade": 13.09, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26D", "camada": "1 (Reprovada)", "inicio": "2026-08-22 10:25", "term_lanc": "2026-08-22 18:05", "term_reg": "2026-08-30 18:00", "conclusao": "2026-08-30 20:44", "t_lanc": 7.66666666651145, "t_reg": 191.916666666744, "t_ensaio": 2.73333333333721, "t_total": 202.316666666593, "umidade": 13.09, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19E", "camada": "4", "inicio": "2026-08-21 08:00", "term_lanc": "2026-08-21 11:00", "term_reg": "2026-08-26 02:05", "conclusao": "2026-08-26 23:23", "t_lanc": 3, "t_reg": 111.083333333256, "t_ensaio": 21.3000000001048, "t_total": 135.383333333361, "umidade": 14.12, "causa": null, "area_m2": 2520.878, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20E", "camada": "4", "inicio": "2026-08-23 00:19", "term_lanc": "2026-08-23 03:51", "term_reg": "2026-08-26 12:24", "conclusao": "2026-08-26 21:36", "t_lanc": 3.53333333332557, "t_reg": 80.5500000001048, "t_ensaio": 9.19999999995343, "t_total": 93.2833333333838, "umidade": 13.85, "causa": null, "area_m2": 5456.996, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21E", "camada": "3A", "inicio": "2026-08-18 08:38", "term_lanc": "2026-08-18 16:35", "term_reg": "2026-08-25 15:05", "conclusao": "2026-08-25 15:40", "t_lanc": 7.94999999989523, "t_reg": 166.5, "t_ensaio": 0.583333333488554, "t_total": 175.033333333384, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22E", "camada": "5", "inicio": "2026-08-20 22:35", "term_lanc": "2026-08-21 08:00", "term_reg": "2026-08-25 15:01", "conclusao": "2026-08-25 15:38", "t_lanc": 9.41666666680249, "t_reg": 103.016666666663, "t_ensaio": 0.616666666581295, "t_total": 113.050000000047, "umidade": 15.2, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23E", "camada": "6", "inicio": "2026-08-24 04:40", "term_lanc": "2026-08-24 10:20", "term_reg": "2026-08-24 12:20", "conclusao": "2026-08-30 18:21", "t_lanc": 5.66666666662786, "t_reg": 2.00000000005821, "t_ensaio": 150.016666666546, "t_total": 157.683333333232, "umidade": 14.56, "causa": "RESOLVIDA em 31/08/2026: praça já estava aprovada (regularização e ensaio concluídos), mas o término do lançamento nunca tinha sido registrado. Confirmado que o lançamento terminou em 24/08/2026 10:20.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24E", "camada": "6", "inicio": "2026-08-24 02:10", "term_lanc": "2026-08-26 09:40", "term_reg": "2026-08-26 12:23", "conclusao": "2026-08-30 19:23", "t_lanc": 55.5, "t_reg": 2.71666666661622, "t_ensaio": 102.999999999942, "t_total": 161.216666666558, "umidade": 14.56, "causa": "RESOLVIDA em 30/08/2026: praça ficou sem registro de término de lançamento no Geolabor desde o início (sinalizada como possível atraso de registro). Confirmado que o lançamento terminou em 26/08/2026 09:40.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "16F", "camada": "5", "inicio": "2026-08-24 21:35", "term_lanc": "2026-08-25 10:43", "term_reg": "2026-08-31 08:49", "conclusao": "2026-08-31 10:15", "t_lanc": 13.1333333333605, "t_reg": 142.099999999919, "t_ensaio": 1.43333333346527, "t_total": 156.666666666744, "umidade": 17.85, "causa": "RESOLVIDA em 30/08/2026: praça ficou sem registro de término de lançamento no Geolabor desde o início (sinalizada como possível atraso de registro). Confirmado que o lançamento terminou em 25/08/2026 10:43.", "area_m2": 1748.863, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "17F", "camada": "5", "inicio": "2026-08-24 21:30", "term_lanc": "2026-08-25 15:30", "term_reg": "2026-08-31 02:08", "conclusao": "2026-08-31 10:13", "t_lanc": 18, "t_reg": 130.633333333244, "t_ensaio": 8.08333333331393, "t_total": 156.716666666558, "umidade": 17.85, "causa": "RESOLVIDA em 30/08/2026: praça ficou sem registro de término de lançamento no Geolabor desde o início (sinalizada como possível atraso de registro). Confirmado que o lançamento terminou em 25/08/2026 15:30.", "area_m2": 5033.887, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "18F", "camada": "6", "inicio": "2026-08-23 10:04", "term_lanc": "2026-08-23 15:41", "term_reg": "2026-08-29 13:42", "conclusao": "2026-08-29 15:40", "t_lanc": 5.6166666666395, "t_reg": 142.016666666663, "t_ensaio": 1.96666666679084, "t_total": 149.600000000093, "umidade": 13.59, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19F", "camada": "5", "inicio": "2026-08-20 16:19", "term_lanc": "2026-08-21 05:20", "term_reg": "2026-08-26 02:04", "conclusao": "2026-08-28 23:30", "t_lanc": 13.0166666666628, "t_reg": 116.733333333337, "t_ensaio": 69.4333333333489, "t_total": 199.183333333349, "umidade": 15.83, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20F", "camada": "5", "inicio": "2026-08-21 00:30", "term_lanc": "2026-08-21 05:23", "term_reg": "2026-08-26 02:05", "conclusao": "2026-08-28 08:36", "t_lanc": 4.8833333333605, "t_reg": 116.699999999895, "t_ensaio": 54.5166666666046, "t_total": 176.09999999986, "umidade": 14.61, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21F", "camada": "4", "inicio": "2026-08-22 16:40", "term_lanc": "2026-08-22 16:30", "term_reg": "2026-08-28 20:40", "conclusao": "2026-08-28 21:55", "t_lanc": -0.166666666686069, "t_reg": 148.166666666628, "t_ensaio": 1.25000000005821, "t_total": 149.25, "umidade": 13.51, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22F", "camada": "4", "inicio": "2026-08-22 15:40", "term_lanc": "2026-08-22 16:30", "term_reg": "2026-08-28 20:40", "conclusao": "2026-08-28 21:54", "t_lanc": 0.833333333255723, "t_reg": 148.166666666628, "t_ensaio": 1.23333333333721, "t_total": 150.233333333221, "umidade": 13.51, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "17G", "camada": "11", "inicio": "2026-08-23 16:38", "term_lanc": "2026-08-23 17:49", "term_reg": "2026-08-28 00:13", "conclusao": "2026-08-28 23:45", "t_lanc": 1.18333333317423, "t_reg": 102.400000000081, "t_ensaio": 23.5333333333838, "t_total": 127.11666666664, "umidade": 14.25, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "18G", "camada": "11", "inicio": "2026-08-23 14:25", "term_lanc": "2026-08-23 16:36", "term_reg": "2026-08-28 00:13", "conclusao": "2026-08-28 23:45", "t_lanc": 2.18333333329065, "t_reg": 103.616666666698, "t_ensaio": 23.5333333333838, "t_total": 129.333333333372, "umidade": 14.25, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19G", "camada": "11", "inicio": "2026-08-23 23:05", "term_lanc": "2026-08-24 04:30", "term_reg": "2026-09-03 23:14", "conclusao": "2026-09-04 01:20", "t_lanc": 5.41666666668607, "t_reg": 258.733333333279, "t_ensaio": 2.10000000003492, "t_total": 266.25, "umidade": 14.25, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 14.97, "umidade_base": 13.53, "cota": null}, {"area": "20G", "camada": "10", "inicio": "2026-08-19 02:00", "term_lanc": "2026-08-19 05:53", "term_reg": "2026-08-19 22:00", "conclusao": "2026-08-24 16:14", "t_lanc": 3.88333333324408, "t_reg": 16.1166666666395, "t_ensaio": 114.233333333395, "t_total": 134.233333333279, "umidade": 12.2, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21G", "camada": "10", "inicio": "2026-08-21 17:10", "term_lanc": "2026-08-21 20:54", "term_reg": "2026-08-25 16:05", "conclusao": "2026-08-25 16:32", "t_lanc": 3.73333333327901, "t_reg": 91.1833333333489, "t_ensaio": 0.449999999895226, "t_total": 95.3666666665231, "umidade": 15.61, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22G", "camada": "10", "inicio": "2026-08-21 16:00", "term_lanc": "2026-08-21 18:01", "term_reg": "2026-08-25 16:05", "conclusao": "2026-08-25 16:15", "t_lanc": 2.0166666667792, "t_reg": 94.0666666666511, "t_ensaio": 0.166666666686069, "t_total": 96.2500000001164, "umidade": 15.61, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23G", "camada": "9", "inicio": "2026-08-21 11:00", "term_lanc": "2026-08-21 16:00", "term_reg": "2026-08-24 08:23", "conclusao": "2026-08-24 11:47", "t_lanc": 4.99999999988359, "t_reg": 64.3833333334769, "t_ensaio": 3.39999999990687, "t_total": 72.7833333332674, "umidade": 15.61, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23G", "camada": "10", "inicio": "2026-08-21 16:00", "term_lanc": "2026-08-21 18:01", "term_reg": "2026-08-25 16:05", "conclusao": "2026-08-25 16:15", "t_lanc": 2.0166666667792, "t_reg": 94.0666666666511, "t_ensaio": 0.166666666686069, "t_total": 96.2500000001164, "umidade": 15.61, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20D", "camada": "2", "inicio": "2026-08-26 02:58", "term_lanc": "2026-08-27 04:46", "term_reg": "2026-08-29 21:10", "conclusao": "2026-08-29 22:20", "t_lanc": 25.7999999999302, "t_reg": 64.4000000000233, "t_ensaio": 1.16666666662786, "t_total": 91.3666666665813, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21D", "camada": "2", "inicio": "2026-08-26 18:05", "term_lanc": "2026-08-27 05:46", "term_reg": "2026-08-29 20:34", "conclusao": "2026-08-29 22:35", "t_lanc": 11.6833333333489, "t_reg": 62.8000000000466, "t_ensaio": 2.01666666660458, "t_total": 76.5, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24D", "camada": "2 (Reprovada)", "inicio": "2026-08-25 09:30", "term_lanc": "2026-08-28 22:22", "term_reg": "", "conclusao": "2026-08-30 08:30", "t_lanc": 84.8666666665231, "t_reg": null, "t_ensaio": null, "t_total": 118.999999999884, "umidade": 16.02, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19E", "camada": "5", "inicio": "2026-08-27 09:09", "term_lanc": "2026-08-27 13:31", "term_reg": "2026-09-01 10:12", "conclusao": "2026-09-01 14:33", "t_lanc": 4.36666666675592, "t_reg": 116.683333333349, "t_ensaio": 4.3499999998603, "t_total": 125.399999999965, "umidade": 14.66, "causa": "NOTA TÉCNICA: praça concluída pouco antes de chuva registrada na estação Barragem Germano (23h-04h, 01→02/09/2026, ~8mm acumulados). Possível reumidificação da camada — verificar em campo se afetou a condição do material.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20E", "camada": "5", "inicio": "2026-08-27 15:36", "term_lanc": "2026-08-27 23:13", "term_reg": "2026-09-01 10:22", "conclusao": "2026-09-01 14:29", "t_lanc": 7.61666666669771, "t_reg": 107.149999999849, "t_ensaio": 4.11666666681413, "t_total": 118.883333333361, "umidade": 14.66, "causa": "NOTA TÉCNICA: praça concluída pouco antes de chuva registrada na estação Barragem Germano (23h-04h, 01→02/09/2026, ~8mm acumulados). Possível reumidificação da camada — verificar em campo se afetou a condição do material.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21E", "camada": "4", "inicio": "2026-08-26 00:43", "term_lanc": "2026-08-26 04:51", "term_reg": "2026-09-05 21:40", "conclusao": "2026-09-05 22:09", "t_lanc": 4.13333333318587, "t_reg": 256.816666666826, "t_ensaio": 0.483333333337214, "t_total": 261.433333333349, "umidade": 13.73, "causa": "NOTA TÉCNICA: praça recebeu aterro pedido pela topografia (pontos baixos identificados). Faz parte da regularização da camada 4 — não é camada nova.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 14.23, "umidade_base": 13.23, "cota": null}, {"area": "22E", "camada": "6A", "inicio": "2026-08-27 03:12", "term_lanc": "2026-08-27 13:42", "term_reg": "2026-09-01 00:40", "conclusao": "2026-09-01 02:30", "t_lanc": 10.5, "t_reg": 106.966666666791, "t_ensaio": 1.83333333319752, "t_total": 119.299999999988, "umidade": 14.95, "causa": "NOTA TÉCNICA: praça concluída pouco antes de chuva registrada na estação Barragem Germano (23h-04h, 01→02/09/2026, ~8mm acumulados). Possível reumidificação da camada — verificar em campo se afetou a condição do material.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20G", "camada": "11", "inicio": "2026-08-26 17:25", "term_lanc": "2026-08-30 08:40", "term_reg": "2026-09-03 22:31", "conclusao": "2026-09-04 01:01", "t_lanc": 87.2499999999418, "t_reg": 109.850000000093, "t_ensaio": 2.49999999994179, "t_total": 199.599999999977, "umidade": 15.68, "causa": "NOTA TÉCNICA: camada de 20cm para regularização de cota.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21G", "camada": "11", "inicio": "2026-08-26 16:30", "term_lanc": "2026-08-26 17:20", "term_reg": "2026-09-04 12:26", "conclusao": "2026-09-04 14:01", "t_lanc": 0.833333333255723, "t_reg": 211.100000000093, "t_ensaio": 1.58333333325572, "t_total": 213.516666666605, "umidade": 15.98, "causa": "NOTA TÉCNICA: camada de 20cm, ensaio realizado somente topo.", "area_m2": null, "ini_compact": "2026-08-31 16:30", "fim_compact": "2026-08-31 18:14", "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22G", "camada": "11", "inicio": "2026-08-26 15:05", "term_lanc": "2026-08-26 16:25", "term_reg": "2026-09-04 11:50", "conclusao": "2026-09-04 13:47", "t_lanc": 1.33333333348855, "t_reg": 211.41666666657, "t_ensaio": 1.95000000006985, "t_total": 214.700000000128, "umidade": 15.98, "causa": "NOTA TÉCNICA: camada de 20cm para correção de cota, ensaio somente topo.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23G", "camada": "11", "inicio": "2026-08-30 22:04", "term_lanc": "2026-08-31 04:00", "term_reg": "2026-09-01 14:36", "conclusao": "2026-09-02 21:59", "t_lanc": 5.93333333329065, "t_reg": 34.5999999999767, "t_ensaio": 31.3833333334769, "t_total": 71.9166666667443, "umidade": 14.4, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 14.7, "umidade_base": 14.1, "cota": null}, {"area": "25E", "camada": "1", "inicio": "2026-08-26 05:10", "term_lanc": "2026-08-26 09:30", "term_reg": "2026-09-06 13:26", "conclusao": "2026-09-09 13:16", "t_lanc": 4.33333333331393, "t_reg": 267.933333333232, "t_ensaio": 71.8333333333139, "t_total": 344.09999999986, "umidade": 13.77, "causa": "BLOQUEADA: praça bloqueada até resolução de problema — retirada da lista de prioridades.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 14.37, "umidade_base": 13.17, "cota": null}, {"area": "26E", "camada": "1", "inicio": "2026-08-26 05:52", "term_lanc": "2026-08-26 08:20", "term_reg": "2026-09-05 21:33", "conclusao": "2026-09-09 10:08", "t_lanc": 2.46666666667443, "t_reg": 253.216666666791, "t_ensaio": 84.5833333333139, "t_total": 340.266666666779, "umidade": 12.11, "causa": "BLOQUEADA: praça bloqueada até resolução de problema — retirada da lista de prioridades.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 11.53, "umidade_base": 12.7, "cota": null}, {"area": "Complemento 24E", "camada": "1", "inicio": "2026-08-26 05:03", "term_lanc": "2026-08-26 09:30", "term_reg": "", "conclusao": "2026-08-31 16:34", "t_lanc": 4.45000000001164, "t_reg": null, "t_ensaio": null, "t_total": 131.516666666663, "umidade": 15.23, "causa": null, "area_m2": 1701.871, "ini_compact": "2026-08-31 11:50", "fim_compact": "2026-08-31 13:05", "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "17G", "camada": "12", "inicio": "2026-08-29 09:20", "term_lanc": "2026-08-29 10:20", "term_reg": "2026-09-01 03:51", "conclusao": "2026-09-01 11:08", "t_lanc": 0.999999999941792, "t_reg": 65.5166666666628, "t_ensaio": 7.28333333332557, "t_total": 73.7999999999302, "umidade": null, "causa": "NOTA TÉCNICA: praça concluída pouco antes de chuva registrada na estação Barragem Germano (23h-04h, 01→02/09/2026, ~8mm acumulados). Possível reumidificação da camada — verificar em campo se afetou a condição do material.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "18G", "camada": "12", "inicio": "2026-08-29 05:08", "term_lanc": "2026-08-29 09:20", "term_reg": "2026-09-01 04:53", "conclusao": "2026-09-01 11:04", "t_lanc": 4.20000000006985, "t_reg": 67.5499999999884, "t_ensaio": 6.18333333323244, "t_total": 77.9333333332907, "umidade": null, "causa": "NOTA TÉCNICA: praça concluída pouco antes de chuva registrada na estação Barragem Germano (23h-04h, 01→02/09/2026, ~8mm acumulados). Possível reumidificação da camada — verificar em campo se afetou a condição do material.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21F", "camada": "5", "inicio": "2026-08-30 10:10", "term_lanc": "2026-08-30 16:35", "term_reg": "2026-08-31 11:31", "conclusao": "2026-09-03 14:35", "t_lanc": 6.41666666662786, "t_reg": 18.9333333334071, "t_ensaio": 75.0666666667094, "t_total": 100.416666666744, "umidade": null, "causa": null, "area_m2": null, "ini_compact": "2026-08-31 16:07", "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22F", "camada": "5", "inicio": "2026-08-30 09:30", "term_lanc": "2026-08-30 10:10", "term_reg": "2026-08-31 11:31", "conclusao": "2026-09-03 14:37", "t_lanc": 0.666666666569654, "t_reg": 25.3500000000349, "t_ensaio": 75.0999999999767, "t_total": 101.116666666581, "umidade": null, "causa": "NOTA TÉCNICA: praça com volume inferior a 1.000m³, agrupada à 21F camada 5. Ensaio de referência CB_EX1_127, realizado na 21F por ser a praça de maior volume.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "18F", "camada": "7A", "inicio": "2026-08-30 16:40", "term_lanc": "2026-08-31 04:24", "term_reg": "2026-08-31 08:26", "conclusao": "2026-08-31 14:40", "t_lanc": 11.7333333333372, "t_reg": 4.03333333338378, "t_ensaio": 6.2333333332208, "t_total": 21.9999999999418, "umidade": null, "causa": null, "area_m2": 5587.435, "ini_compact": "2026-08-31 10:50", "fim_compact": "2026-08-31 13:00", "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19F", "camada": "6", "inicio": "2026-08-29 09:40", "term_lanc": "2026-08-29 22:27", "term_reg": "2026-09-03 16:43", "conclusao": "2026-09-03 21:34", "t_lanc": 12.7833333332674, "t_reg": 114.266666666663, "t_ensaio": 4.84999999991851, "t_total": 131.899999999849, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20F", "camada": "6", "inicio": "2026-08-29 09:20", "term_lanc": "2026-08-29 23:00", "term_reg": "2026-08-31 11:31", "conclusao": "2026-09-03 21:23", "t_lanc": 13.6666666666861, "t_reg": 36.5166666666046, "t_ensaio": 81.8666666666977, "t_total": 132.049999999988, "umidade": 13.1, "causa": null, "area_m2": null, "ini_compact": "2026-08-31 16:07", "fim_compact": null, "umidade_topo": 13.2, "umidade_base": 13, "cota": null}, {"area": "23D", "camada": "2 (Reprovada)", "inicio": "2026-08-30 02:07", "term_lanc": "2026-08-30 05:47", "term_reg": "2026-08-31 09:28", "conclusao": "2026-08-31 13:56", "t_lanc": 3.66666666674428, "t_reg": 27.6833333332906, "t_ensaio": 4.46666666673264, "t_total": 35.8166666667676, "umidade": null, "causa": null, "area_m2": 5554.773, "ini_compact": "2026-08-31 09:30", "fim_compact": "2026-08-31 11:40", "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22D", "camada": "2", "inicio": "2026-08-30 05:47", "term_lanc": "2026-08-30 11:30", "term_reg": "2026-09-01 02:30", "conclusao": "2026-09-01 04:30", "t_lanc": 5.71666666661622, "t_reg": 39, "t_ensaio": 2.00000000005821, "t_total": 46.7166666666744, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26C", "camada": "2", "inicio": "2026-08-29 22:59", "term_lanc": "2026-08-30 02:06", "term_reg": "2026-09-04 13:56", "conclusao": "2026-09-04 15:49", "t_lanc": 3.11666666669771, "t_reg": 131.833333333314, "t_ensaio": 1.8833333333605, "t_total": 136.833333333372, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25C", "camada": "2", "inicio": "2026-08-29 22:58", "term_lanc": "2026-08-30 02:06", "term_reg": "2026-08-30 10:16", "conclusao": "2026-08-30 22:17", "t_lanc": 3.1333333334187, "t_reg": 8.16666666656965, "t_ensaio": 12.016666666721, "t_total": 23.3166666667094, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25D", "camada": "1A", "inicio": "2026-08-22 08:40", "term_lanc": "2026-08-22 14:58", "term_reg": "2026-08-30 09:30", "conclusao": "2026-08-30 11:40", "t_lanc": 6.30000000010477, "t_reg": 186.533333333326, "t_ensaio": 2.16666666656965, "t_total": 195, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24D", "camada": "3", "inicio": "2026-08-31 10:14", "term_lanc": "2026-09-01 05:48", "term_reg": "2026-09-05 04:48", "conclusao": "2026-09-05 08:47", "t_lanc": 19.5666666667094, "t_reg": 94.9999999998836, "t_ensaio": 3.98333333339542, "t_total": 118.549999999988, "umidade": null, "causa": "NOTA TÉCNICA: camada mais fina que o padrão — a praça estava em cota quebrada, essa camada é de ajuste/regularização pra levar à cota cheia.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23E", "camada": "7", "inicio": "2026-08-31 13:05", "term_lanc": "2026-08-31 18:21", "term_reg": "2026-09-04 21:30", "conclusao": "2026-09-04 22:48", "t_lanc": 5.26666666654637, "t_reg": 99.1500000001397, "t_ensaio": 1.29999999987194, "t_total": 105.716666666558, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24E", "camada": "7", "inicio": "2026-08-31 13:05", "term_lanc": "2026-08-31 18:21", "term_reg": "2026-09-04 21:00", "conclusao": "2026-09-04 22:33", "t_lanc": 5.26666666654637, "t_reg": 98.6500000000815, "t_ensaio": 1.54999999998836, "t_total": 105.466666666616, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25C", "camada": "3", "inicio": "2026-08-31 09:21", "term_lanc": "2026-08-31 09:56", "term_reg": "2026-09-04 12:03", "conclusao": "2026-09-04 14:11", "t_lanc": 0.583333333488554, "t_reg": 98.1166666665813, "t_ensaio": 2.13333333330229, "t_total": 100.833333333372, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25D", "camada": "2", "inicio": "2026-08-31 04:20", "term_lanc": "2026-08-31 06:21", "term_reg": "2026-09-01 10:45", "conclusao": "2026-09-01 11:56", "t_lanc": 2.01666666660458, "t_reg": 28.4000000000233, "t_ensaio": 1.18333333334886, "t_total": 31.5999999999767, "umidade": 15.45, "causa": "NOTA TÉCNICA: praça concluída pouco antes de chuva registrada na estação Barragem Germano (23h-04h, 01→02/09/2026, ~8mm acumulados). Possível reumidificação da camada — verificar em campo se afetou a condição do material.", "area_m2": null, "ini_compact": "2026-08-31 12:30", "fim_compact": "2026-08-31 17:38", "umidade_topo": 15.8, "umidade_base": 15.1, "cota": null}, {"area": "16F", "camada": "6", "inicio": "2026-08-31 18:22", "term_lanc": "2026-08-31 22:15", "term_reg": "2026-09-03 22:30", "conclusao": "2026-09-04 02:26", "t_lanc": 3.8833333334187, "t_reg": 72.2499999999418, "t_ensaio": 3.93333333340706, "t_total": 80.0666666667676, "umidade": 16.2, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 16, "umidade_base": 16.4, "cota": null}, {"area": "26D", "camada": "2", "inicio": "2026-08-31 23:50", "term_lanc": "2026-09-01 05:10", "term_reg": "2026-09-03 14:40", "conclusao": "2026-09-03 15:17", "t_lanc": 5.33333333343035, "t_reg": 57.4999999998836, "t_ensaio": 0.616666666755918, "t_total": 63.4500000000699, "umidade": 16.7, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 17.3, "umidade_base": 16.1, "cota": null}, {"area": "23D", "camada": "2A", "inicio": "2026-08-30 02:07", "term_lanc": "2026-08-30 05:47", "term_reg": "2026-08-31 09:28", "conclusao": "2026-08-31 13:56", "t_lanc": 3.66666666674428, "t_reg": 27.6833333332906, "t_ensaio": 4.46666666673264, "t_total": 35.8166666667676, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20D", "camada": "3", "inicio": "2026-08-30 19:27", "term_lanc": "2026-08-30 22:44", "term_reg": "2026-09-02 22:47", "conclusao": "2026-09-03 14:13", "t_lanc": 3.28333333338378, "t_reg": 72.0499999999884, "t_ensaio": 15.4333333333489, "t_total": 90.766666666721, "umidade": 14.95, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 16.1, "umidade_base": 13.8, "cota": null}, {"area": "21D", "camada": "3", "inicio": "2026-08-31 03:30", "term_lanc": "2026-09-01 08:17", "term_reg": "2026-09-03 13:35", "conclusao": "2026-09-04 01:34", "t_lanc": 28.7833333332092, "t_reg": 53.2999999999884, "t_ensaio": 11.9833333334536, "t_total": 94.0666666666511, "umidade": 15.65, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.5, "umidade_base": 15.8, "cota": null}, {"area": "17F", "camada": "6", "inicio": "2026-08-31 20:10", "term_lanc": "2026-09-01 01:20", "term_reg": "2026-09-03 22:36", "conclusao": "2026-09-04 02:40", "t_lanc": 5.16666666656965, "t_reg": 69.2666666666628, "t_ensaio": 4.06666666665115, "t_total": 78.4999999998836, "umidade": 15.55, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 16, "umidade_base": 15.1, "cota": null}, {"area": "18F", "camada": "8 (Reprovada)", "inicio": "2026-09-03 04:03", "term_lanc": "2026-09-03 11:47", "term_reg": "2026-09-03 22:56", "conclusao": "2026-09-10 09:04", "t_lanc": 7.73333333339542, "t_reg": 11.1500000000233, "t_ensaio": 154.133333333361, "t_total": 173.016666666779, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25E", "camada": "2 (Reprovada)", "inicio": "2026-09-10 14:00", "term_lanc": "2026-09-11 08:56", "term_reg": "", "conclusao": "2026-09-11 18:00", "t_lanc": 18.9333333332324, "t_reg": null, "t_ensaio": null, "t_total": 27.9999999999418, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22D", "camada": "3", "inicio": "2026-09-01 11:15", "term_lanc": "2026-09-01 18:09", "term_reg": "2026-09-05 13:10", "conclusao": "2026-09-05 14:10", "t_lanc": 6.89999999996508, "t_reg": 91.0166666666628, "t_ensaio": 1.00000000011642, "t_total": 98.9166666667443, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25C", "camada": "4", "inicio": "2026-09-05 15:24", "term_lanc": "2026-09-06 04:13", "term_reg": "2026-09-08 14:17", "conclusao": "2026-09-08 15:34", "t_lanc": 12.8166666665347, "t_reg": 58.0666666666511, "t_ensaio": 1.28333333332557, "t_total": 72.1666666665115, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19E", "camada": "6", "inicio": "2026-09-02 16:31", "term_lanc": "2026-09-02 21:30", "term_reg": "2026-09-10 10:51", "conclusao": "2026-09-10 12:51", "t_lanc": 4.98333333333721, "t_reg": 181.34999999986, "t_ensaio": 2.00000000005821, "t_total": 188.333333333256, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20E", "camada": "6", "inicio": "2026-09-02 15:57", "term_lanc": "2026-09-02 21:30", "term_reg": "2026-09-05 21:25", "conclusao": "2026-09-10 11:05", "t_lanc": 5.55000000010477, "t_reg": 71.9166666665697, "t_ensaio": 109.666666666686, "t_total": 187.133333333361, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23D", "camada": "3", "inicio": "2026-09-01 21:10", "term_lanc": "2026-09-10 08:00", "term_reg": "2026-09-10 10:20", "conclusao": "2026-09-10 12:21", "t_lanc": 202.833333333372, "t_reg": 2.33333333325572, "t_ensaio": 2.01666666660458, "t_total": 207.183333333232, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25D", "camada": "3", "inicio": "2026-09-02 10:18", "term_lanc": "2026-09-03 11:19", "term_reg": "2026-09-05 12:08", "conclusao": "2026-09-05 14:36", "t_lanc": 25.0166666666628, "t_reg": 48.8166666667094, "t_ensaio": 2.4666666664998, "t_total": 76.2999999998719, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25D", "camada": "4", "inicio": "2026-09-06 02:32", "term_lanc": "2026-09-06 05:36", "term_reg": "2026-09-11 09:55", "conclusao": "2026-09-11 13:55", "t_lanc": 3.06666666653473, "t_reg": 124.316666666768, "t_ensaio": 3.99999999994179, "t_total": 131.383333333244, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21D", "camada": "4", "inicio": "2026-09-05 10:11", "term_lanc": "2026-09-05 17:17", "term_reg": "2026-09-09 10:56", "conclusao": "2026-09-09 15:29", "t_lanc": 7.09999999991851, "t_reg": 89.6500000000815, "t_ensaio": 4.54999999998836, "t_total": 101.299999999988, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26C", "camada": "3", "inicio": "2026-09-05 05:50", "term_lanc": "2026-09-05 09:48", "term_reg": "2026-09-06 16:50", "conclusao": "", "t_lanc": 3.96666666667443, "t_reg": 31.0333333333838, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "20D", "camada": "4", "inicio": "2026-09-04 01:45", "term_lanc": "2026-09-05 09:13", "term_reg": "2026-09-06 03:13", "conclusao": "2026-09-07 20:15", "t_lanc": 31.4666666667326, "t_reg": 18, "t_ensaio": 41.0333333333256, "t_total": 90.5000000000582, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20D", "camada": "5", "inicio": "2026-09-08 16:03", "term_lanc": "2026-09-08 18:20", "term_reg": "2026-09-08 21:03", "conclusao": "2026-09-11 19:04", "t_lanc": 2.28333333344199, "t_reg": 2.71666666661622, "t_ensaio": 70.0166666666628, "t_total": 75.016666666721, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22D", "camada": "4", "inicio": "2026-09-06 10:30", "term_lanc": "2026-09-06 16:20", "term_reg": "", "conclusao": "", "t_lanc": 5.83333333331393, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24D", "camada": "4", "inicio": "2026-09-06 09:30", "term_lanc": "2026-09-06 14:42", "term_reg": "2026-09-06 17:10", "conclusao": "2026-09-07 23:14", "t_lanc": 5.20000000001164, "t_reg": 2.46666666667443, "t_ensaio": 30.0666666665347, "t_total": 37.7333333332208, "umidade": null, "causa": "NOTA TÉCNICA: camada de 20cm para regularização de cota, ensaio somente topo.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24D", "camada": "5", "inicio": "2026-09-07 08:00", "term_lanc": "2026-09-07 10:20", "term_reg": "2026-09-08 13:51", "conclusao": "2026-09-09 16:08", "t_lanc": 2.33333333325572, "t_reg": 27.5166666666046, "t_ensaio": 26.283333333442, "t_total": 56.1333333333023, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26D", "camada": "3", "inicio": "2026-09-05 00:22", "term_lanc": "2026-09-05 10:23", "term_reg": "2026-09-06 17:15", "conclusao": "2026-09-09 16:16", "t_lanc": 10.0166666666628, "t_reg": 30.8666666666977, "t_ensaio": 71.0166666666046, "t_total": 111.899999999965, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21E", "camada": "5", "inicio": "2026-09-06 05:43", "term_lanc": "2026-09-06 11:20", "term_reg": "2026-09-08 10:56", "conclusao": "2026-09-09 13:43", "t_lanc": 5.6166666666395, "t_reg": 47.6000000000931, "t_ensaio": 26.7833333333256, "t_total": 80.0000000000582, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22E", "camada": "7", "inicio": "2026-09-01 16:56", "term_lanc": "2026-09-01 21:40", "term_reg": "", "conclusao": "", "t_lanc": 4.73333333339542, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23E", "camada": "8", "inicio": "2026-09-05 20:03", "term_lanc": "2026-09-05 23:40", "term_reg": "2026-09-08 15:39", "conclusao": "2026-09-10 10:52", "t_lanc": 3.6166666665813, "t_reg": 63.9833333333954, "t_ensaio": 43.2166666666162, "t_total": 110.816666666593, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24E", "camada": "8", "inicio": "2026-09-05 23:45", "term_lanc": "2026-09-06 02:21", "term_reg": "2026-09-10 12:49", "conclusao": "2026-09-10 15:49", "t_lanc": 2.59999999991851, "t_reg": 106.466666666733, "t_ensaio": 3, "t_total": 112.066666666651, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "16F", "camada": "7", "inicio": "2026-09-04 17:27", "term_lanc": "2026-09-10 03:02", "term_reg": "2026-09-10 07:02", "conclusao": "2026-09-10 09:03", "t_lanc": 129.583333333314, "t_reg": 4.00000000011642, "t_ensaio": 2.01666666660458, "t_total": 135.600000000035, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "17F", "camada": "7", "inicio": "2026-09-04 17:26", "term_lanc": "2026-09-05 00:13", "term_reg": "2026-09-10 07:03", "conclusao": "2026-09-10 09:03", "t_lanc": 6.78333333326737, "t_reg": 126.833333333256, "t_ensaio": 2.00000000005821, "t_total": 135.616666666581, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19F", "camada": "7", "inicio": "2026-09-04 05:13", "term_lanc": "2026-09-04 16:47", "term_reg": "2026-09-04 21:45", "conclusao": "2026-09-10 18:46", "t_lanc": 11.5666666666511, "t_reg": 4.96666666661622, "t_ensaio": 141.016666666721, "t_total": 157.549999999988, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20F", "camada": "7", "inicio": "2026-09-04 07:31", "term_lanc": "2026-09-04 16:41", "term_reg": "2026-09-04 19:51", "conclusao": "2026-09-10 18:53", "t_lanc": 9.16666666668607, "t_reg": 3.16666666651145, "t_ensaio": 143.0333333335, "t_total": 155.366666666698, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21F", "camada": "6", "inicio": "2026-09-03 20:57", "term_lanc": "2026-09-04 02:04", "term_reg": "2026-09-10 08:05", "conclusao": "2026-09-10 10:05", "t_lanc": 5.1166666665813, "t_reg": 150.016666666721, "t_ensaio": 2.00000000005821, "t_total": 157.133333333361, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22F", "camada": "6", "inicio": "2026-09-03 21:36", "term_lanc": "2026-09-04 02:05", "term_reg": "2026-09-10 08:05", "conclusao": "2026-09-10 10:05", "t_lanc": 4.48333333327901, "t_reg": 150, "t_ensaio": 2.00000000005821, "t_total": 156.483333333337, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "17G", "camada": "13", "inicio": "2026-09-02 23:37", "term_lanc": "2026-09-03 03:03", "term_reg": "2026-09-08 21:50", "conclusao": "2026-09-08 22:40", "t_lanc": 3.43333333334886, "t_reg": 138.783333333267, "t_ensaio": 0.833333333430346, "t_total": 143.050000000047, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "18G", "camada": "13", "inicio": "2026-09-02 21:32", "term_lanc": "2026-09-02 23:36", "term_reg": "2026-09-08 20:05", "conclusao": "2026-09-08 22:20", "t_lanc": 2.06666666659294, "t_reg": 140.483333333395, "t_ensaio": 2.25, "t_total": 144.799999999988, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20G", "camada": "12", "inicio": "2026-09-04 16:17", "term_lanc": "2026-09-04 21:28", "term_reg": "2026-09-04 19:29", "conclusao": "2026-09-10 19:29", "t_lanc": 5.18333333329065, "t_reg": -1.98333333333721, "t_ensaio": 144, "t_total": 147.199999999953, "umidade": null, "causa": "NOTA TÉCNICA: datas com inconsistência cronológica — término da regularização (04/09 19:29) registrado ANTES do término do lançamento (04/09 21:28). Conferir no Geolabor.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21G", "camada": "12", "inicio": "2026-09-05 00:16", "term_lanc": "2026-09-05 09:28", "term_reg": "2026-09-11 14:09", "conclusao": "2026-09-11 16:09", "t_lanc": 9.19999999995343, "t_reg": 148.683333333407, "t_ensaio": 2.00000000005821, "t_total": 159.883333333419, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22G", "camada": "12 (Reprovada)", "inicio": "2026-09-05 00:18", "term_lanc": "2026-09-05 02:50", "term_reg": "2026-09-11 13:09", "conclusao": "2026-09-11 16:09", "t_lanc": 2.53333333338378, "t_reg": 154.316666666768, "t_ensaio": 3, "t_total": 159.850000000151, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "23G", "camada": "12", "inicio": "2026-09-03 16:47", "term_lanc": "2026-09-03 20:57", "term_reg": "2026-09-11 08:33", "conclusao": "2026-09-11 10:33", "t_lanc": 4.16666666662786, "t_reg": 179.599999999919, "t_ensaio": 2.00000000005821, "t_total": 185.766666666605, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "19G", "camada": "12", "inicio": "2026-09-05 05:08", "term_lanc": "2026-09-05 13:07", "term_reg": "2026-09-05 16:00", "conclusao": "2026-09-10 19:00", "t_lanc": 7.98333333333721, "t_reg": 2.88333333330229, "t_ensaio": 123, "t_total": 133.86666666664, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25E", "camada": "2A", "inicio": "2026-09-10 14:00", "term_lanc": "2026-09-11 08:56", "term_reg": "", "conclusao": "", "t_lanc": 18.9333333332324, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 854}, {"area": "26E", "camada": "2 (Reprovada)", "inicio": "2026-09-10 16:00", "term_lanc": "2026-09-11 08:57", "term_reg": "2026-09-11 13:15", "conclusao": "2026-09-11 18:00", "t_lanc": 16.9500000000699, "t_reg": 4.30000000004657, "t_ensaio": 4.74999999994179, "t_total": 26.0000000000582, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26E", "camada": "2A", "inicio": "2026-09-10 16:00", "term_lanc": "2026-09-11 08:57", "term_reg": "", "conclusao": "", "t_lanc": 16.9500000000699, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 854}, {"area": "24G", "camada": "1", "inicio": "2026-09-03 10:04", "term_lanc": "2026-09-03 16:39", "term_reg": "2026-09-11 20:07", "conclusao": "2026-09-11 23:07", "t_lanc": 6.58333333331393, "t_reg": 195.466666666616, "t_ensaio": 3, "t_total": 205.04999999993, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24G", "camada": "2", "inicio": "2026-09-12 20:40", "term_lanc": "2026-09-13 00:40", "term_reg": "", "conclusao": "", "t_lanc": 4.00000000011642, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843.5}, {"area": "21D", "camada": "5", "inicio": "2026-09-09 17:30", "term_lanc": "2026-09-10 05:30", "term_reg": "2026-09-11 11:05", "conclusao": "2026-09-11 21:30", "t_lanc": 12, "t_reg": 29.5833333333721, "t_ensaio": 10.4166666667443, "t_total": 52.0000000001164, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "21D", "camada": "6", "inicio": "2026-09-12 10:21", "term_lanc": "2026-09-12 16:49", "term_reg": "", "conclusao": "", "t_lanc": 6.46666666661622, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "20D", "camada": "6", "inicio": "2026-09-12 11:12", "term_lanc": "2026-09-12 15:44", "term_reg": "", "conclusao": "", "t_lanc": 4.53333333326737, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "23D", "camada": "4", "inicio": "2026-09-11 02:05", "term_lanc": "2026-09-11 06:05", "term_reg": "2026-09-13 12:36", "conclusao": "2026-09-13 14:22", "t_lanc": 3.99999999994179, "t_reg": 54.5166666667792, "t_ensaio": 1.76666666666279, "t_total": 60.2833333333838, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "24D", "camada": "6", "inicio": "2026-09-10 08:00", "term_lanc": "2026-09-11 04:00", "term_reg": "2026-09-13 13:16", "conclusao": "2026-09-13 16:16", "t_lanc": 19.9999999998836, "t_reg": 57.2666666666628, "t_ensaio": 3, "t_total": 80.2666666665464, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "25D", "camada": "5", "inicio": "2026-09-12 03:45", "term_lanc": "2026-09-12 12:09", "term_reg": "2026-09-11 14:44", "conclusao": "2026-09-11 16:32", "t_lanc": 8.39999999996508, "t_reg": -21.4166666666279, "t_ensaio": 1.79999999993015, "t_total": -11.2166666667326, "umidade": null, "causa": "NOTA TÉCNICA: datas com inconsistência cronológica — início (12/09 03:45) registrado DEPOIS da regularização e conclusão (11/09). Conferir no Geolabor.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "26D", "camada": "4", "inicio": "2026-09-11 05:24", "term_lanc": "2026-09-11 11:24", "term_reg": "", "conclusao": "", "t_lanc": 6, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "19E", "camada": "7", "inicio": "2026-09-12 00:12", "term_lanc": "2026-09-12 06:12", "term_reg": "", "conclusao": "", "t_lanc": 6, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "21E", "camada": "6", "inicio": "2026-09-10 01:10", "term_lanc": "2026-09-10 06:15", "term_reg": "", "conclusao": "", "t_lanc": 5.08333333331393, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 856}, {"area": "16F", "camada": "8 (Reprovada)", "inicio": "2026-09-10 14:23", "term_lanc": "2026-09-10 21:55", "term_reg": "2026-09-13 02:08", "conclusao": "2026-09-13 04:09", "t_lanc": 7.53333333326737, "t_reg": 52.2166666666162, "t_ensaio": 2.0166666667792, "t_total": 61.7666666666628, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "16F", "camada": "8A", "inicio": "2026-09-10 14:23", "term_lanc": "2026-09-10 21:55", "term_reg": "", "conclusao": "", "t_lanc": 7.53333333326737, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 15.38, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 16.13, "umidade_base": 14.63, "cota": 855}, {"area": "17F", "camada": "8 (Reprovada)", "inicio": "2026-09-10 19:00", "term_lanc": "2026-09-10 22:00", "term_reg": "2026-09-13 02:09", "conclusao": "2026-09-13 04:09", "t_lanc": 3, "t_reg": 52.1500000000815, "t_ensaio": 2.00000000005821, "t_total": 57.1500000001397, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "17F", "camada": "8A", "inicio": "2026-09-10 19:00", "term_lanc": "2026-09-10 22:00", "term_reg": "", "conclusao": "", "t_lanc": 3, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 14.68, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.87, "umidade_base": 13.5, "cota": 855}, {"area": "18F", "camada": "8A", "inicio": "2026-09-03 04:03", "term_lanc": "2026-09-03 11:47", "term_reg": "2026-09-03 22:56", "conclusao": "2026-09-10 09:04", "t_lanc": 7.73333333339542, "t_reg": 11.1500000000233, "t_ensaio": 154.133333333361, "t_total": 173.016666666779, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "18F", "camada": "9", "inicio": "2026-09-12 12:05", "term_lanc": "2026-09-12 16:55", "term_reg": "", "conclusao": "", "t_lanc": 4.83333333337214, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 14.42, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.67, "umidade_base": 13.17, "cota": 856}, {"area": "19F", "camada": "8", "inicio": "2026-09-11 15:05", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 14.82, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 16.23, "umidade_base": 13.4, "cota": 855.5}, {"area": "20F", "camada": "8", "inicio": "2026-09-11 15:06", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 15.7, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.43, "umidade_base": 15.97, "cota": 855.5}, {"area": "21F", "camada": "7", "inicio": "2026-09-10 22:59", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 14.77, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.43, "umidade_base": 14.1, "cota": 855.5}, {"area": "22F", "camada": "7", "inicio": "2026-09-10 22:01", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 14.79, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.7, "umidade_base": 13.87, "cota": 855.5}, {"area": "17G", "camada": "14", "inicio": "2026-09-09 06:10", "term_lanc": "2026-09-09 09:50", "term_reg": "", "conclusao": "", "t_lanc": 3.66666666656965, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843.5}, {"area": "18G", "camada": "14", "inicio": "2026-09-09 02:45", "term_lanc": "2026-09-09 06:10", "term_reg": "", "conclusao": "", "t_lanc": 3.41666666662786, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843.5}, {"area": "19G", "camada": "13", "inicio": "2026-09-11 10:50", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843.5}, {"area": "20G", "camada": "13", "inicio": "2026-09-11 11:10", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843.5}, {"area": "21G", "camada": "13", "inicio": "2026-09-12 16:49", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843}, {"area": "22G", "camada": "12A", "inicio": "2026-09-05 00:18", "term_lanc": "2026-09-05 02:50", "term_reg": "2026-09-11 13:09", "conclusao": "2026-09-12 08:21", "t_lanc": 2.53333333338378, "t_reg": 154.316666666768, "t_ensaio": 19.1999999998952, "t_total": 176.050000000047, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22G", "camada": "13", "inicio": "2026-09-12 20:42", "term_lanc": "2026-09-13 00:42", "term_reg": "", "conclusao": "", "t_lanc": 3.99999999994179, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843}, {"area": "23G", "camada": "13", "inicio": "2026-09-12 20:41", "term_lanc": "2026-09-13 00:41", "term_reg": "", "conclusao": "", "t_lanc": 3.99999999994179, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 843.5}, {"area": "22D", "camada": "5", "inicio": "2026-09-11 06:00", "term_lanc": "2026-09-11 05:01", "term_reg": "2026-09-13 13:05", "conclusao": "2026-09-13 15:01", "t_lanc": -0.983333333395422, "t_reg": 56.0666666667676, "t_ensaio": 1.93333333334886, "t_total": 57.016666666721, "umidade": null, "causa": "NOTA TÉCNICA: datas com inconsistência cronológica — término do lançamento (11/09 05:01) registrado ANTES do início (11/09 06:00). Conferir no Geolabor.", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "22D", "camada": "6", "inicio": "2026-09-14 00:07", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "22E", "camada": "8", "inicio": "2026-09-09 20:40", "term_lanc": "2026-09-10 01:10", "term_reg": "2026-09-13 01:10", "conclusao": "2026-09-13 04:10", "t_lanc": 4.5, "t_reg": 72, "t_ensaio": 3, "t_total": 79.5, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "Complemento 24E", "camada": "2", "inicio": "2026-09-09 16:49", "term_lanc": "2026-09-11 06:56", "term_reg": "2026-09-11 14:15", "conclusao": "2026-09-11 18:00", "t_lanc": 38.1166666667559, "t_reg": 7.31666666659294, "t_ensaio": 3.75, "t_total": 49.1833333333489, "umidade": null, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": null}, {"area": "20E", "camada": "8", "inicio": "2026-09-12 01:13", "term_lanc": "2026-09-12 05:33", "term_reg": "", "conclusao": "", "t_lanc": 4.33333333331393, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": null, "causa": "NOTA TÉCNICA: sequência pula da camada 6 pra 8 — confirmado que não existe camada 7 pra essa praça no Geolabor (não é erro nosso).", "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": null, "umidade_base": null, "cota": 855.5}, {"area": "22E", "camada": "9", "inicio": "2026-09-13 21:05", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 14.5, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 15.1, "umidade_base": 13.9, "cota": 857.5}, {"area": "23E", "camada": "9", "inicio": "2026-09-13 01:00", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 16.66, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 17.43, "umidade_base": 15.9, "cota": 857.5}, {"area": "24E", "camada": "9", "inicio": "2026-09-13 01:00", "term_lanc": "", "term_reg": "", "conclusao": "", "t_lanc": null, "t_reg": null, "t_ensaio": null, "t_total": null, "umidade": 16.32, "causa": null, "area_m2": null, "ini_compact": null, "fim_compact": null, "umidade_topo": 17.1, "umidade_base": 15.53, "cota": 857.5}];
+
+function parseDate(s){
+  if(!s) return null;
+  return new Date(s.replace(' ','T'));
+}
+
+function fmtDate(s){
+  const d = parseDate(s);
+  if(!d) return '—';
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+const AGORA = new Date('2026-09-14T12:00:00');
+
+// ---------- Classificação ----------
+DADOS.forEach(d=>{
+  d.aberta = !d.conclusao;
+  if(d.aberta){
+    d.dias_aberto = (AGORA - parseDate(d.inicio)) / (1000*3600*24);
+    if(d.term_reg) d.status_texto = 'Regularizada, aguardando ensaio';
+    else if(d.term_lanc) d.status_texto = 'Lançamento concluído, aguardando regularização';
+    else d.status_texto = 'Ainda em lançamento';
+  }
+});
+
+const abertas = DADOS.filter(d=>d.aberta);
+
+// Se uma área tem mais de uma camada aberta, só a mais recente (maior início) conta
+// pra prioridade — as antigas foram superadas por uma camada nova e não devem competir.
+const maisRecentePorArea = {};
+abertas.forEach(d=>{
+  const dt = parseDate(d.inicio);
+  if(!dt) return;
+  if(!maisRecentePorArea[d.area] || dt > maisRecentePorArea[d.area].dt){
+    maisRecentePorArea[d.area] = { dt, camada: d.camada };
+  }
+});
+const abertasAtuais = abertas.filter(d=>{
+  const ref = maisRecentePorArea[d.area];
+  return ref && d.camada === ref.camada;
+});
+
+const bloqueadas = abertasAtuais.filter(d=>d.causa && d.causa.startsWith('BLOQUEADA'));
+const abertasPriorizaveis = abertasAtuais.filter(d=>!(d.causa && d.causa.startsWith('BLOQUEADA')));
+const concluidas = DADOS.filter(d=>!d.aberta);
+
+// ---------- KPIs ----------
+document.getElementById('kpi-total').textContent = DADOS.length;
+document.getElementById('kpi-abertas').textContent = abertasAtuais.length;
+document.getElementById('kpi-concluidas').textContent = concluidas.length;
+document.getElementById('kpi-disponibilidade').textContent = Math.round(concluidas.length/DADOS.length*100) + '%';
+document.getElementById('subtitle').textContent = DADOS.length + ' registros de camada · ' + abertasAtuais.length + ' em aberto agora';
+
+// ---------- Prioridade por tempo ----------
+const rankTempo = [...abertasPriorizaveis].sort((a,b)=>b.dias_aberto - a.dias_aberto).slice(0,8);
+const listaPrio = document.getElementById('lista-prioridade');
+rankTempo.forEach((d,i)=>{
+  const div = document.createElement('div');
+  div.className = 'card' + (i<4 ? ' priority':'');
+  div.innerHTML = `
+    <div class="card-main">
+      <div class="card-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+      <div class="card-meta">${d.status_texto}</div>
+    </div>
+    <div>
+      <div class="card-days">${d.dias_aberto.toFixed(1)}d</div>
+      <div class="card-days-label">aberta</div>
+    </div>`;
+  listaPrio.appendChild(div);
+});
+
+// ---------- Prioridade estrutural por cota (todas as faixas) ----------
+const FAIXAS = ['C','D','E','F']; // faixa G removida: afastamento de 60m, não é mais prioridade de nivelamento
+const estruturalPorFaixa = [];
+FAIXAS.forEach(faixa=>{
+  const doFaixa = abertasPriorizaveis.filter(d=>d.area.endsWith(faixa) && d.cota!=null);
+  if(doFaixa.length===0) return;
+  const menorCota = Math.min(...doFaixa.map(d=>d.cota));
+  doFaixa.filter(d=>d.cota===menorCota).forEach(d=>estruturalPorFaixa.push({...d, faixa}));
+});
+const listaEstrut = document.getElementById('lista-estrutural');
+if(estruturalPorFaixa.length===0){
+  listaEstrut.innerHTML = '<div class="gauge-caption">Nenhuma praça com cota registrada em aberto no momento.</div>';
+} else {
+  estruturalPorFaixa.forEach(d=>{
+    const div = document.createElement('div');
+    div.className = 'card structural';
+    div.innerHTML = `
+      <div class="card-main">
+        <div class="card-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada} · faixa ${d.faixa}</span></div>
+        <div class="card-meta">Cota mais baixa da faixa ${d.faixa} (${d.cota.toFixed(3)}m) — nivelamento de platô</div>
+      </div>
+      <div>
+        <div class="card-days">${d.dias_aberto.toFixed(1)}d</div>
+        <div class="card-days-label">aberta</div>
+      </div>`;
+    listaEstrut.appendChild(div);
+  });
+}
+
+// ---------- Interferências ----------
+const comCausa = DADOS.filter(d=>d.causa && !d.causa.startsWith('NOTA TÉCNICA') && !d.causa.startsWith('BLOQUEADA') && !d.causa.startsWith('RESOLVIDA'));
+const notasTecnicas = DADOS.filter(d=>d.causa && d.causa.startsWith('NOTA TÉCNICA'));
+const listaInterf = document.getElementById('lista-interferencias');
+if(comCausa.length===0){
+  listaInterf.innerHTML = '<div class="gauge-caption">Nenhuma interferência registrada.</div>';
+} else {
+  comCausa.forEach(d=>{
+    const div = document.createElement('div');
+    div.className = 'card warn';
+    div.innerHTML = `
+      <div class="card-main">
+        <div class="card-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+        <div class="card-meta">${d.causa}</div>
+      </div>`;
+    listaInterf.appendChild(div);
+  });
+}
+
+// ---------- Praças bloqueadas ----------
+const listaBloq = document.getElementById('lista-bloqueadas');
+if(bloqueadas.length===0){
+  listaBloq.innerHTML = '<div class="gauge-caption">Nenhuma praça bloqueada no momento.</div>';
+} else {
+  bloqueadas.forEach(d=>{
+    const div = document.createElement('div');
+    div.className = 'card warn';
+    div.innerHTML = `
+      <div class="card-main">
+        <div class="card-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+        <div class="card-meta">${d.causa}</div>
+      </div>`;
+    listaBloq.appendChild(div);
+  });
+}
+
+// ---------- Gauge de desvio ----------
+const totaisFechados = concluidas.filter(d=>d.t_total!=null).map(d=>d.t_total);
+const desvio = totaisFechados.length ? (Math.max(...totaisFechados) - Math.min(...totaisFechados)) : 0;
+
+function drawGauge(value, max){
+  const svg = document.getElementById('gauge-svg');
+  const cx=110, cy=110, r=90;
+  const pct = Math.min(value/max, 1);
+  const startAngle = Math.PI;
+  const x1 = cx + r*Math.cos(Math.PI), y1 = cy + r*Math.sin(Math.PI);
+  const x2 = cx + r*Math.cos(0), y2 = cy + r*Math.sin(0);
+  const endAngle = Math.PI - pct*Math.PI;
+  const xv = cx + r*Math.cos(endAngle), yv = cy + r*Math.sin(endAngle);
+  const largeArc = pct > 0.5 ? 1 : 0;
+  svg.innerHTML = `
+    <path d="M ${x1} ${y1} A ${r} ${r} 0 1 1 ${x2} ${y2}" fill="none" stroke="#dde1e7" stroke-width="16" stroke-linecap="round"/>
+    <path d="M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${xv} ${yv}" fill="none" stroke="#b8860b" stroke-width="16" stroke-linecap="round"/>
+    <text x="110" y="90" text-anchor="middle" font-size="28" font-weight="700" fill="#14213d" font-family="monospace">${value.toFixed(0)}h</text>
+    <text x="110" y="108" text-anchor="middle" fill="#5c6b80" font-size="11" font-family="monospace">desvio (máx-mín)</text>
+  `;
+}
+drawGauge(desvio, Math.max(desvio*1.3, 200));
+
+// ---------- Tempo médio por faixa ----------
+const faixas = ['C','D','E','F','G'];
+const faixaWrap = document.getElementById('faixa-breakdown');
+let maxFaixa = 0;
+const faixaMedias = faixas.map(letra=>{
+  const items = concluidas.filter(d=>d.area.endsWith(letra) && d.t_total!=null);
+  const m = items.length ? items.reduce((a,b)=>a+b.t_total,0)/items.length : 0;
+  if(m>maxFaixa) maxFaixa=m;
+  return {letra, media:m, n:items.length};
+});
+faixaMedias.forEach(f=>{
+  const row = document.createElement('div');
+  row.className = 'faixa-row';
+  const widthPct = maxFaixa ? (f.media/maxFaixa*100) : 0;
+  row.innerHTML = `
+    <div class="faixa-letter">${f.letra}</div>
+    <div class="faixa-bar-bg"><div class="faixa-bar" style="width:${widthPct}%"></div></div>
+    <div class="faixa-val">${f.media ? f.media.toFixed(0)+'h' : '—'} <span style="opacity:.6">(${f.n})</span></div>
+  `;
+  faixaWrap.appendChild(row);
+});
+
+// ---------- Scatter umidade x regularização ----------
+const scatterData = concluidas.filter(d=>d.umidade!=null && d.t_reg!=null).map(d=>({x:d.umidade, y:d.t_reg, label:d.area, camada:d.camada}));
+new Chart(document.getElementById('scatterChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: 'Praças',
+      data: scatterData,
+      backgroundColor: '#b8860b',
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx)=> ctx.raw.label + ' (camada ' + ctx.raw.camada + '): ' + ctx.raw.x.toFixed(1) + '% / ' + ctx.raw.y.toFixed(0) + 'h'
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Umidade (%)', color: '#5c6b80' },
+        ticks: { color: '#5c6b80' },
+        grid: { color: '#dde1e7' }
+      },
+      y: {
+        title: { display: true, text: 'Tempo de regularização (h)', color: '#5c6b80' },
+        ticks: { color: '#5c6b80' },
+        grid: { color: '#dde1e7' }
+      }
+    }
+  }
+});
+
+// ---------- Causas ----------
+const causaCount = {};
+comCausa.forEach(d=>{
+  let key;
+  if(d.causa.startsWith('RESOLVIDA')) key = 'Atraso de registro — já resolvida';
+  else if(d.causa.length > 40) key = 'Atraso de registro no Geolabor';
+  else key = d.causa;
+  causaCount[key] = (causaCount[key]||0)+1;
+});
+const causaWrap = document.getElementById('causas-wrap');
+const maxCausa = Math.max(...Object.values(causaCount), 1);
+Object.entries(causaCount).sort((a,b)=>b[1]-a[1]).forEach(([causa,n])=>{
+  const row = document.createElement('div');
+  row.className = 'causa-row';
+  row.innerHTML = `
+    <div style="flex:0 0 auto; max-width:120px;">${causa}</div>
+    <div class="causa-bar-bg"><div class="causa-bar" style="width:${n/maxCausa*100}%"></div></div>
+    <div class="causa-count">${n}</div>
+  `;
+  causaWrap.appendChild(row);
+});
+if(Object.keys(causaCount).length===0){
+  causaWrap.innerHTML = '<div class="gauge-caption">Nenhuma causa registrada ainda.</div>';
+}
+
+// ---------- Escala de turnos e cálculo automático ----------
+const ESCALA = {"2026-08-20": ["F", "F", "20", "8"], "2026-08-21": ["8", "F", "F", "20"], "2026-08-22": ["8", "F", "F", "20"], "2026-08-23": ["20", "8", "F", "F"], "2026-08-24": ["20", "8", "F", "F"], "2026-08-25": ["F", "20", "8", "F"], "2026-08-26": ["F", "20", "8", "F"], "2026-08-27": ["F", "F", "20", "8"], "2026-08-28": ["F", "F", "20", "8"], "2026-08-29": ["8", "F", "F", "20"], "2026-08-30": ["8", "F", "F", "20"], "2026-08-31": ["20", "8", "F", "F"], "2026-09-01": ["20", "8", "F", "F"], "2026-09-02": ["F", "20", "8", "F"], "2026-09-03": ["F", "20", "8", "F"], "2026-09-04": ["F", "F", "20", "8"], "2026-09-05": ["F", "F", "20", "8"], "2026-09-06": ["8", "F", "F", "20"], "2026-09-07": ["8", "F", "F", "20"], "2026-09-08": ["20", "8", "F", "F"], "2026-09-09": ["20", "8", "F", "F"], "2026-09-10": ["F", "20", "8", "F"], "2026-09-11": ["F", "20", "8", "F"], "2026-09-12": ["F", "F", "20", "8"], "2026-09-13": ["F", "F", "20", "8"], "2026-09-14": ["8", "F", "F", "20"], "2026-09-15": ["8", "F", "F", "20"], "2026-09-16": ["20", "8", "F", "F"], "2026-09-17": ["20", "8", "F", "F"], "2026-09-18": ["F", "20", "8", "F"], "2026-09-19": ["F", "20", "8", "F"], "2026-09-20": ["F", "F", "20", "8"], "2026-09-21": ["F", "F", "20", "8"], "2026-09-22": ["8", "F", "F", "20"], "2026-09-23": ["8", "F", "F", "20"], "2026-09-24": ["20", "8", "F", "F"], "2026-09-25": ["20", "8", "F", "F"], "2026-09-26": ["F", "20", "8", "F"], "2026-09-27": ["F", "20", "8", "F"], "2026-09-28": ["F", "F", "20", "8"], "2026-09-29": ["F", "F", "20", "8"], "2026-09-30": ["8", "F", "F", "20"], "2026-10-01": ["8", "F", "F", "20"], "2026-10-02": ["20", "8", "F", "F"], "2026-10-03": ["20", "8", "F", "F"], "2026-10-04": ["F", "20", "8", "F"], "2026-10-05": ["F", "20", "8", "F"], "2026-10-06": ["F", "F", "20", "8"], "2026-10-07": ["F", "F", "20", "8"], "2026-10-08": ["8", "F", "F", "20"], "2026-10-09": ["8", "F", "F", "20"], "2026-10-10": ["20", "8", "F", "F"], "2026-10-11": ["20", "8", "F", "F"], "2026-10-12": ["F", "20", "8", "F"], "2026-10-13": ["F", "20", "8", "F"], "2026-10-14": ["F", "F", "20", "8"], "2026-10-15": ["F", "F", "20", "8"], "2026-10-16": ["8", "F", "F", "20"], "2026-10-17": ["8", "F", "F", "20"], "2026-10-18": ["20", "8", "F", "F"], "2026-10-19": ["20", "8", "F", "F"], "2026-10-20": ["F", "20", "8", "F"], "2026-10-21": ["F", "20", "8", "F"], "2026-10-22": ["F", "F", "20", "8"], "2026-10-23": ["F", "F", "20", "8"], "2026-10-24": ["8", "F", "F", "20"], "2026-10-25": ["8", "F", "F", "20"], "2026-10-26": ["20", "8", "F", "F"], "2026-10-27": ["20", "8", "F", "F"], "2026-10-28": ["F", "20", "8", "F"], "2026-10-29": ["F", "20", "8", "F"], "2026-10-30": ["F", "F", "20", "8"], "2026-10-31": ["F", "F", "20", "8"], "2026-11-01": ["8", "F", "F", "20"], "2026-11-02": ["8", "F", "F", "20"], "2026-11-03": ["20", "8", "F", "F"], "2026-11-04": ["20", "8", "F", "F"], "2026-11-05": ["F", "20", "8", "F"], "2026-11-06": ["F", "20", "8", "F"], "2026-11-07": ["F", "F", "20", "8"], "2026-11-08": ["F", "F", "20", "8"], "2026-11-09": ["8", "F", "F", "20"], "2026-11-10": ["8", "F", "F", "20"], "2026-11-11": ["20", "8", "F", "F"], "2026-11-12": ["20", "8", "F", "F"], "2026-11-13": ["F", "20", "8", "F"], "2026-11-14": ["F", "20", "8", "F"], "2026-11-15": ["F", "F", "20", "8"]};
+const LETRAS = ['A','B','C','D'];
+
+function turnoNoInstante(dt){
+  const h = dt.getHours();
+  let tipo, baseDate;
+  if (h >= 7 && h < 19){
+    tipo = '8';
+    baseDate = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  } else {
+    tipo = '20';
+    baseDate = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    if (h < 7){
+      baseDate.setDate(baseDate.getDate()-1);
+    }
+  }
+  const y = baseDate.getFullYear();
+  const m = String(baseDate.getMonth()+1).padStart(2,'0');
+  const dd = String(baseDate.getDate()).padStart(2,'0');
+  const key = y + '-' + m + '-' + dd;
+  const dia = ESCALA[key];
+  if(!dia) return null;
+  const idx = dia.indexOf(tipo);
+  if(idx===-1) return null;
+  return LETRAS[idx];
+}
+
+// ---------- Lista de inconsistências ----------
+const listaInc = document.getElementById('lista-inconsistencias');
+if(comCausa.length===0){
+  listaInc.innerHTML = '<div class="gauge-caption">Nenhuma inconsistência registrada no momento.</div>';
+} else {
+  comCausa.forEach(d=>{
+    const inicioDt = parseDate(d.inicio);
+    const turno = inicioDt ? turnoNoInstante(inicioDt) : null;
+    const resolvida = d.causa.startsWith('RESOLVIDA');
+    const div = document.createElement('div');
+    div.className = resolvida ? 'card structural' : 'card warn';
+    div.innerHTML = `
+      <div class="card-main">
+        <div class="card-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span> ${resolvida ? '<span style="color:var(--olive); font-size:11px; font-weight:700;">✓ RESOLVIDA</span>' : ''}</div>
+        <div class="card-meta">Início: ${fmtDate(d.inicio)}</div>
+        <div class="card-meta">${d.causa}</div>
+      </div>
+      <div>
+        <div class="card-days">${turno ? 'Turno '+turno : '—'}</div>
+        <div class="card-days-label">responsável</div>
+      </div>`;
+    listaInc.appendChild(div);
+  });
+}
+
+// ---------- Lançamento sem término há mais de 2 dias ----------
+const lancPendenteTodos = abertasAtuais.filter(d=>d.inicio && !d.term_lanc);
+const lancPendente = lancPendenteTodos.filter(d=>{
+  const inicioDt = parseDate(d.inicio);
+  if(!inicioDt) return false;
+  const diasPassados = (AGORA - inicioDt) / (1000*3600*24);
+  return diasPassados > 2;
+});
+const listaLancPend = document.getElementById('lista-lanc-pendente');
+if(lancPendente.length===0){
+  listaLancPend.innerHTML = '<div class="gauge-caption">Nenhum lançamento passou de 2 dias sem término.</div>';
+} else {
+  [...lancPendente].sort((a,b)=>parseDate(a.inicio)-parseDate(b.inicio)).forEach(d=>{
+    const inicioDt = parseDate(d.inicio);
+    const dias = (AGORA - inicioDt) / (1000*3600*24);
+    const div = document.createElement('div');
+    div.className = 'card warn';
+    div.innerHTML = `
+      <div class="card-main">
+        <div class="card-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+        <div class="card-meta">Início do lançamento: ${fmtDate(d.inicio)}</div>
+      </div>
+      <div>
+        <div class="card-days">${dias.toFixed(1)}d</div>
+        <div class="card-days-label">sem término</div>
+      </div>`;
+    listaLancPend.appendChild(div);
+  });
+}
+
+// ---------- Expansão dos KPIs (clicar pra ver a lista) ----------
+let kpiAberto = null;
+function toggleKpiList(tipo){
+  const box = document.getElementById('kpi-expand');
+  if(kpiAberto === tipo){
+    box.classList.remove('open');
+    box.innerHTML = '';
+    kpiAberto = null;
+    return;
+  }
+  kpiAberto = tipo;
+  const lista = tipo === 'abertas' ? abertasAtuais : concluidas;
+  const ordenada = [...lista].sort((a,b)=> a.area.localeCompare(b.area));
+  box.innerHTML = '';
+  ordenada.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'kpi-expand-item';
+    const statusTxt = tipo === 'abertas' ? d.status_texto : ('Concluída em ' + fmtDate(d.conclusao));
+    row.innerHTML = `
+      <div class="kpi-expand-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+      <div class="kpi-expand-status">${statusTxt}</div>
+    `;
+    box.appendChild(row);
+  });
+  box.classList.add('open');
+}
+
+// ---------- Praças liberadas ao longo dos dias ----------
+const porDia = {};
+const praçasPorDia = {};
+concluidas.forEach(d=>{
+  const dt = parseDate(d.conclusao);
+  if(!dt) return;
+  const chave = dt.toISOString().slice(0,10);
+  porDia[chave] = (porDia[chave]||0) + 1;
+  if(!praçasPorDia[chave]) praçasPorDia[chave] = [];
+  praçasPorDia[chave].push(d);
+});
+const diasOrdenados = Object.keys(porDia).sort();
+const labelsData = diasOrdenados.map(k=>{
+  const [y,m,dd] = k.split('-');
+  return dd+'/'+m;
+});
+const valoresData = diasOrdenados.map(k=>porDia[k]);
+
+new Chart(document.getElementById('liberadasChart'), {
+  type: 'bar',
+  data: {
+    labels: labelsData,
+    datasets: [{
+      label: 'Praças liberadas',
+      data: valoresData,
+      backgroundColor: '#b8860b',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#5c6b80' }, grid: { display: false } },
+      y: { beginAtZero: true, ticks: { color: '#5c6b80', stepSize: 1 }, grid: { color: '#dde1e7' } }
+    },
+    onClick: (evt, elements) => {
+      if(elements.length === 0) return;
+      const idx = elements[0].index;
+      const chave = diasOrdenados[idx];
+      toggleLiberadasDia(chave, labelsData[idx]);
+    }
+  }
+});
+
+let diaLiberadasAberto = null;
+function toggleLiberadasDia(chave, labelDia){
+  const box = document.getElementById('kpi-expand-liberadas');
+  if(diaLiberadasAberto === chave){
+    box.classList.remove('open');
+    box.innerHTML = '';
+    diaLiberadasAberto = null;
+    return;
+  }
+  diaLiberadasAberto = chave;
+  const lista = praçasPorDia[chave] || [];
+  box.innerHTML = `<div style="font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-bottom:6px;">Liberadas em ${labelDia}:</div>`;
+  lista.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'kpi-expand-item';
+    row.innerHTML = `
+      <div class="kpi-expand-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+      <div class="kpi-expand-status">${fmtDate(d.conclusao)}</div>
+    `;
+    box.appendChild(row);
+  });
+  box.classList.add('open');
+}
+
+// ---------- Tempo de compactação por praça ----------
+const compactWrap = document.getElementById('compactacao-wrap');
+const comCompactacao = DADOS.filter(d=>d.ini_compact && d.fim_compact).map(d=>{
+  const ini = parseDate(d.ini_compact);
+  const fim = parseDate(d.fim_compact);
+  const horas = (fim - ini) / (1000*3600);
+  return {area: d.area, camada: d.camada, horas};
+}).sort((a,b)=>b.horas - a.horas);
+
+if(comCompactacao.length===0){
+  compactWrap.innerHTML = '<div class="gauge-caption">Nenhuma compactação com início e fim registrados ainda.</div>';
+} else {
+  const maxHoras = Math.max(...comCompactacao.map(c=>c.horas));
+  comCompactacao.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'faixa-row';
+    const widthPct = maxHoras ? (c.horas/maxHoras*100) : 0;
+    row.innerHTML = `
+      <div class="faixa-letter" style="width:auto; font-size:12px;">${c.area}-${c.camada}</div>
+      <div class="faixa-bar-bg"><div class="faixa-bar" style="width:${widthPct}%"></div></div>
+      <div class="faixa-val">${c.horas.toFixed(1)}h</div>
+    `;
+    compactWrap.appendChild(row);
+  });
+}
+
+// ---------- Resumo do Projeto (Passo 6-8) ----------
+document.getElementById('resumo-total').textContent = DADOS.length;
+document.getElementById('resumo-concluidas').textContent = concluidas.length;
+const reprovadasCount = DADOS.filter(d=>String(d.camada).includes('Reprovada')).length;
+document.getElementById('resumo-reprovadas').textContent = reprovadasCount;
+
+function toggleReprovadas(){
+  const box = document.getElementById('kpi-expand-reprovadas');
+  if(box.classList.contains('open')){
+    box.classList.remove('open');
+    box.innerHTML = '';
+    return;
+  }
+  const lista = DADOS.filter(d=>String(d.camada).includes('Reprovada'));
+  box.innerHTML = '';
+  lista.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'kpi-expand-item';
+    row.innerHTML = `
+      <div class="kpi-expand-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+      <div class="kpi-expand-status">${d.causa ? d.causa.slice(0,60)+'...' : ''}</div>
+    `;
+    box.appendChild(row);
+  });
+  box.classList.add('open');
+}
+
+const comUmidadeReg = concluidas.filter(d=>d.umidade!=null && d.t_reg!=null);
+const baixaUmid = comUmidadeReg.filter(d=>d.umidade < 13);
+const altaUmid = comUmidadeReg.filter(d=>d.umidade >= 13);
+const mediaBaixa = baixaUmid.length ? baixaUmid.reduce((a,b)=>a+b.t_reg,0)/baixaUmid.length : null;
+const mediaAlta = altaUmid.length ? altaUmid.reduce((a,b)=>a+b.t_reg,0)/altaUmid.length : null;
+
+if(mediaBaixa!=null && mediaAlta!=null && mediaBaixa>0){
+  const pctDiff = ((mediaAlta-mediaBaixa)/mediaBaixa*100);
+  document.getElementById('resumo-diferenca-umidade').textContent = '+' + pctDiff.toFixed(0) + '%';
+} else {
+  document.getElementById('resumo-diferenca-umidade').textContent = '—';
+}
+
+const tabelaUmid = document.getElementById('resumo-umidade-tabela');
+tabelaUmid.innerHTML = `
+  <div class="causa-row clickable-row" onclick="toggleUmidLista('baixa')"><div>Umidade &lt; 13% ▾</div><div class="causa-count">${baixaUmid.length} praças</div></div>
+  <div class="causa-row"><div>Tempo médio regularização</div><div class="causa-count">${mediaBaixa!=null ? mediaBaixa.toFixed(1)+'h' : '—'}</div></div>
+  <div class="causa-row clickable-row" onclick="toggleUmidLista('alta')"><div>Umidade ≥ 13% ▾</div><div class="causa-count">${altaUmid.length} praças</div></div>
+  <div class="causa-row"><div>Tempo médio regularização</div><div class="causa-count">${mediaAlta!=null ? mediaAlta.toFixed(1)+'h' : '—'}</div></div>
+`;
+document.getElementById('resumo-umidade-texto').textContent =
+  (mediaBaixa!=null && mediaAlta!=null)
+  ? `Praças lançadas com umidade abaixo de 13% levam, em média, ${(mediaAlta-mediaBaixa).toFixed(1)}h a menos pra regularizar.`
+  : 'Dado insuficiente pra essa comparação ainda.';
+
+// ---------- Expansão da lista de umidade (clicar pra ver quais praças) ----------
+let umidAberto = null;
+function toggleUmidLista(tipo){
+  const box = document.getElementById('kpi-expand-umid');
+  if(umidAberto === tipo){
+    box.classList.remove('open');
+    box.innerHTML = '';
+    umidAberto = null;
+    return;
+  }
+  umidAberto = tipo;
+  const lista = tipo === 'baixa' ? baixaUmid : altaUmid;
+  const ordenada = [...lista].sort((a,b)=> a.area.localeCompare(b.area));
+  box.innerHTML = '';
+  ordenada.forEach(d=>{
+    const row = document.createElement('div');
+    row.className = 'kpi-expand-item';
+    row.innerHTML = `
+      <div class="kpi-expand-area">${d.area} <span style="color:var(--text-dim); font-weight:400;">camada ${d.camada}</span></div>
+      <div class="kpi-expand-status">${d.umidade.toFixed(1)}% · ${d.t_reg.toFixed(1)}h regularização</div>
+    `;
+    box.appendChild(row);
+  });
+  box.classList.add('open');
+}
+
+// ---------- Tabs ----------
+function switchView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelector('.tab-btn[data-view="'+name+'"]').classList.add('active');
+}
+</script>
+
+</body>
+</html>
